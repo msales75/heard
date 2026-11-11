@@ -11,8 +11,7 @@ uv run alembic upgrade head
 uv run heard                   # http://127.0.0.1:8000/healthz
 ```
 
-Checks: `uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest`
-(tests need the database running).
+Run `make check` before pushing: it starts Postgres and runs the same steps as CI.
 
 Full stack in containers: `docker compose up --build`.
 

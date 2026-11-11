@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -28,10 +29,15 @@ def create_app() -> FastAPI:
 
     @app.get("/healthz")
     async def healthz(request: Request) -> JSONResponse:
+        timeout_s = get_settings().healthz_timeout_s
         engine: AsyncEngine = request.app.state.engine
         try:
-            async with engine.connect() as conn:
-                await conn.execute(text("SELECT 1"))
+            async with asyncio.timeout(timeout_s):
+                async with engine.connect() as conn:
+                    await conn.execute(text("SELECT 1"))
+        except TimeoutError:
+            logger.warning("Healthz timeout", extra={"timeout_s": timeout_s})
+            return JSONResponse({"status": "error", "database": "timeout"}, status_code=503)
         except Exception:
             logger.exception("health check failed")
             return JSONResponse({"status": "error", "database": "unreachable"}, status_code=503)
